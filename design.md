@@ -36,7 +36,7 @@ There will be only two type of agents: 'Innovators' and 'Social connections'. In
 
 (5)   In what kind of environment do these agents operate? Describe the basic environment type (e.g., spatial, network, featurespace, etc.) and fully describe the environment.
 
-The agents will operate in a network environment.  The network will be a generated undirected graph with a fixed number of nodes (`N_innovators`) and with a user selected generation algorithm to determine the social connections. Most likely we will focus on the Barabasi-Albert preferential attachment model as that seems to have the good approximation for social networks. 
+The agents will operate in a network environment.  The network will be a generated undirected graph with a fixed number of nodes (`N_innovators`) and with a user selected generation algorithm to determine the social connections. Most likely we will focus on the Barabasi-Albert preferential attachment model as that seems to be good approximation for social networks, but others can be explored.
 
 (6)   If you had to “discretize” the phenomenon into time steps, what events and in what order would occur during any one time step? Fully describe everything that happens during a time step.
 
@@ -54,7 +54,7 @@ For each Innovator:
 
      * Bitvector Representation: For ideas represented as bitvectors, the Hamming distance will be used. The probability of successful collaboration will be ( 1 - Hamming distance / n_idea).
 
-* If the collaboration is successful, we will increase the collaboration progress  `C_p` of both Innovators by 1.  If they are not, nothing will happen.
+* If the collaboration is successful, we will increase the collaboration progress  `C_p` of both Innovators by 1.  If not, no changes are made.
 
 * If the collaboration progress reaches the threshold `C_t`, the Innovator will launch their idea and we will count this as a successful innovation.  The Innovator will then choose a new random idea and new threshold.
 
@@ -70,7 +70,7 @@ Key inputs to the model include:
 
 - Connectivity in the network (e.g. connection density, but the parameter set will depend on the network generation algorithm)
 
-- The probability of collaboration (per hop `p`)
+- The probability of collaboration (`p` per hop)
 
 - The size of the innovation space, `n_idea` and the type of space (e.g. bitvector, vector)
 
