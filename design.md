@@ -7,18 +7,18 @@ The phenomenon I want to build a model of is the effect of collaboration on inno
 
 (2) What are the principal types of agents involved in this phenomenon?  Illustrate all of the agent types necessary for the model.
 
-There will be only two type of agents: 'Innovators' and 'Social connections'. Innovators will try to get their idea launched by collaborating with other Innovators on a social network. The 'Social connections' (Links) are a proto-agent and will have no properties or behaviors in this initial model
+There will be only two type of agents: 'Innovators' and 'Social connections'. Innovators will try to get their idea launched by collaborating with other Innovators on a social network. The 'Social connections' (Links in the social network) are a proto-agent and will have no properties or behaviors in this initial model. 
 
 (3)   What properties do these agents have (describe by agent type)?  Describe for all agent types.
 
 * Innovators: 
-  * Have an idea that they want to launch, which will be represented by a size `n_idea` bitvector or a vector in a `n_idea` dimensional space.  (Design choice to be made later). 
+  * `Idea`: Represented by either a size `n_idea` bitvector or a vector in a `n_idea` dimensional space.   (Design choice to be made later). These will be generated randomly.  For example, if `n_idea` is 8 and we are using bitvectors, an idea might be `01101111`
 
-  * Have a collaboration threshold `C_t` that they need to meet to launch their idea, which is the number of successful collaborations they need to have before they can launch their idea.  This can be fixed or be a random number from 1 to `C_max`  (Design choice to be made later).
+  * Collaboration Threshold (`C_t`): The number of successful collaborations needed to successfully 'innovate' (launch the idea).  This can be fixed or be a random number from 1 to `C_max`  (Design choice to be made later).
 
-  * Have a 'collaboration progress' `C_p` which is the number of successful collaborations they have had.  This will be initialized to 0.
+  * Collaboration progress (`C_p`): The number of successful collaborations achieved.  This will be initialized to 0.
 
-  * Have a counter `T` which is the number of time steps they have been trying to launch their idea.  If `T` reaches a maximum value `T_max`, the idea will fail and Innovator will reset their idea and threshold.
+  * Time steps counter (`T`): The number of time steps that have elapsed while trying to launch the idea.  If `T` reaches a maximum value `T_max` (a global), the idea will fail and Innovator will reset their idea and threshold.
 
 * Social connections are proto-agents without properties.
 
@@ -36,7 +36,7 @@ There will be only two type of agents: 'Innovators' and 'Social connections'. In
 
 (5)   In what kind of environment do these agents operate? Describe the basic environment type (e.g., spatial, network, featurespace, etc.) and fully describe the environment.
 
-The agents will operate in a network environment.  The network will be a generated undirected graph with a fixed number of nodes (`N_innovators`) and with a user selected generation algorithm to determine the social connections. 
+The agents will operate in a network environment.  The network will be a generated undirected graph with a fixed number of nodes (`N_innovators`) and with a user selected generation algorithm to determine the social connections. Most likely we will focus on the Barabasi-Albert preferential attachment model as that seems to have the good approximation for social networks. 
 
 (6)   If you had to “discretize” the phenomenon into time steps, what events and in what order would occur during any one time step? Fully describe everything that happens during a time step.
 
@@ -48,7 +48,11 @@ For each Innovator:
 
 * We first determine if a collaboration attempt can be made. This is determined distance in hops between the two Innovators on the network. The probability of a connection will be `p^n`, where n is the number of hops between the two Innovators and `p` is a parameter of the model. This represents the difficulty of communicating with other Innovators.
 
-* If the connection is successful, we then determine if we can collaborate with the other Innovator.  This is determined by the similarity of the two Innovators' ideas.  For a vector representation we will use the cosine similarity of the two ideas to determine if they are similar enough to collaborate, while for bitvector we will use the Hamming distance. 
+* If the connection is successful, we then determine if collaboration can occur based on the similarity of the two Innovators' ideas. The similarity measure and probability of successful collaboration depend on the representation of ideas:
+
+     * Vector Representation: For ideas represented as vectors in an `n_idea` dimensional space, cosine similarity will be used. The probability of successful collaboration will be proportional to this similarity measure.
+
+     * Bitvector Representation: For ideas represented as bitvectors, the Hamming distance will be used. The probability of successful collaboration will be ( 1 - Hamming distance / n_idea).
 
 * If the collaboration is successful, we will increase the collaboration progress  `C_p` of both Innovators by 1.  If they are not, nothing will happen.
 
