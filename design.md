@@ -41,34 +41,50 @@ The agents will operate in a network environment.  The network will be a generat
 
 During each time step:
 
+For each Innovator:
+
 * Each Innovator chooses a random Innovator to try and collaborate with.
 
 * We first determine if a collaboration attempt can be made. This is determined distance in hops between the two Innovators. The probability of a connection will be `p^n`, where n is the number of hops between the two Innovators and `p` is a parameter of the model. This represnts the difficulty of communicating with other Innovators.
 
 * If the connection is successful, we then determine if we can collaborate with the other Innovator.  This is determined by the similarity of the two Innovators' ideas.  For a vector representation we will use the cosine similarity of the two ideas to determine if they are similar enough to collaborate, while for bitvector we will use the Hamming distance. 
 
-* If the collaboration is successfull, we will increase the 'collaboration progress' of both Innovators by 1.  If they are not, nothing will happen.
+* If the collaboration is successfull, we will increase the collaboration progress  `C_p` of both Innovators by 1.  If they are not, nothing will happen.
 
-* Optionally, we could create a new direct link between the two Innovators in the network, or do so with some probability that depends on the simularity score. 
+* If the collaboration progress reaches the threshold `C_t`, the Innovator will launch their idea and we will count this as a successful innovation.  The Innovator will then choose a new random idea and new threshold.
+
+* The time steps taken `T` is incremented, and if this is greater then `T_max`, this will count as a failure and the Innovator will reset their idea and threshold.
+
+* Optionally, when there is a successful collaboration,  we could create a new direct link between the two Innovators in the network, or do so with some probability that depends on the simularity score. 
 
 (7)   What are the inputs to the model? Identify all relevant inputs.
 
-Inputs to the model that we can examine:
+Key inputs to the model include:
+
+- The network generation algorithm  (e.g. Barabasi-Albert, Watts-Strogatz, Erdos-Renyi)
 
 - Connectivity in the network (e.g. connection density, but the paramater set will depend on the network generation algorithm)
 
 - The probability of collaboration (per hop `p`)
 
-- The size of the innovation space, `n_idea`
+- The size of the innovation space, `n_idea` and the type of space (e.g. bitvector, vector)
 
 - The maximum number of collaborations that are needed to launch an idea, `N_max`. 
 
+- The maximum time to launch an idea, `T_max`
+
+Other inputs include:
+
+- The number of Innovators, `N_innovators`
+
+- The precise form of the similarity measure between ideas (e.g. cosine similarity, Hamming distance)
+
+
+
 (8)   What do you hope to observe from this model? Identify all relevant outputs.
 
-- The most important output is the rate of innovation, which is the number of successful innovations per time step.   I hope to observe how this rate changes as we vary the inputs to the model, in particular the probability of collaboration `p`.  
+- The most important outputs are the rate of innovation success and failure.  I hope to observe how this rate changes as we vary the inputs to the model, in particular the probability of collaboration `p`.   This could represent the effect of policies that promote or restrict communication between Innovators.
 
-- We also will look at the failure rate of Innovators, which is the number of Innovators that have not launched their idea after `T_max` time steps, and it's dependace on the inputs to the model.
-
-- Finally I would like to look at the impact on the rate of innovation (and failurs) if we mutilate the network, for example by removing some nodes at random that represent  'high risk' nodes or 'bad actors'.  This will be a measure of the robustness of the innovation ecosystem to restrictions on communication. 
+- In addition I would like to look at the impact on the rate of innovation (and failures) if we mutilate the network, for example by removing some nodes at random that represent  'high risk' nodes or 'bad actors'.  This will be a measure of the robustness of the innovation ecosystem to more severe restrictions on communication. Perhaps we could also look at the impact of removing nodes with the highest degree, which could represent the effect of removing the most connected Innovators from the network. 
 
  
