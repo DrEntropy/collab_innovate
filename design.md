@@ -7,7 +7,7 @@ The phenomenon I want to build a model of is the effect of collaboration on inno
 
 (2) What are the principal types of agents involved in this phenomenon?  Illustrate all of the agent types necessary for the model.
 
-There will be only one type of agents: 'Innovators' Innovators will try to get their idea launched by collaborating with other Innovators on a social network.
+There will be only one type of agent: 'Innovators'. Innovators will try to get their idea launched by collaborating with other Innovators on a social network.
 
 (3)   What properties do these agents have (describe by agent type)?  Describe for all agent types.
 
