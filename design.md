@@ -90,6 +90,6 @@ Other inputs include:
 
 - The most important outputs are the rate of innovation success and failure.  I hope to observe how this rate changes as we vary the inputs to the model, in particular the probability of collaboration `p`.   This could represent the effect of policies that promote or restrict communication between Innovators.
 
-- In addition I would like to look at the impact on the rate of innovation (and failures) if we mutilate the network, for example by removing some nodes at random that represent  'high risk' nodes or 'bad actors'.  This will be a measure of the robustness of the innovation ecosystem to more severe restrictions on communication. Perhaps we could also look at the impact of removing nodes with the highest degree, which could represent the effect of removing the most connected Innovators from the network. 
+- In addition I would like to look at the impact on the rate of innovation (and failures) if we mutilate the network, for example by removing some nodes at random that represent  'high risk' nodes or 'bad actors'.  This will be a measure of the robustness of the innovation ecosystem to more severe restrictions on communication. Perhaps we could also look at the impact of removing nodes with the highest degree, which could represent the effect of removing the most connected Innovators from the network and compare this with random nodes.
 
  
