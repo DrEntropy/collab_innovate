@@ -68,7 +68,7 @@ end
 to-report collaborate-prob [other-innovator]
   let d nw:distance-to other-innovator
   let ham-d compare-idea idea ([idea] of other-innovator)
-  report   (p ^ d) * ham-d
+  report ifelse-value d = false [0] [ (p ^ d) * ham-d]
 end
 
 
@@ -204,7 +204,7 @@ succ-thresh
 succ-thresh
 1
 50
-5.0
+10.0
 1
 1
 NIL
@@ -219,7 +219,7 @@ prob
 prob
 0
 1
-0.29
+0.36
 .01
 1
 NIL
@@ -233,7 +233,7 @@ CHOOSER
 network-type
 network-type
 "random" "watts-strogatz" "preferential-attachment"
-1
+0
 
 SLIDER
 687
@@ -304,7 +304,7 @@ rewire-prob
 rewire-prob
 0
 1
-0.15
+0.35
 .05
 1
 NIL
@@ -385,7 +385,7 @@ T_max
 T_max
 0
 100
-20.0
+39.0
 1
 1
 NIL
