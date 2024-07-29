@@ -4,7 +4,7 @@ extensions [nw]
 breed [innovators innovator]
 
 
-turtles-own []
+innovators-own [idea c_progress t_elapsed]
 globals []
 
 
@@ -17,27 +17,68 @@ to setup
     nw:generate-random innovators links N_agents prob ]
   network-type  = "watts-strogatz" [
     nw:generate-watts-strogatz innovators links N_agents WS-max rewire-prob ]
-    network-type = "preferential-attachment" [
+  network-type = "preferential-attachment" [
     nw:generate-preferential-attachment innovators links N_agents min-degree
     ]
   [ stop ])
 
+  ;; set up innovators
   ask innovators [
-
+    reset-innovator
+    random-idea
     ;; seperate spacially
     ifelse random-layout? [setxy random-xcor random-ycor]
       [ repeat 30 [ layout-spring innovators links 0.2 7 1 ] ]
-
-
-
   ]
-   ;; set up innovators
+
   reset-ticks
 
 end
 
+to reset-innovator
+  set t_elapsed 0
+  set c_progress 0
+end
+
+
+;; INNOVATION
+;; TODO make this representation more efficient, use matrix exentsion?
+
+to random-idea
+  set idea n-values n-idea [random 2]
+
+end
+
+to-report invert-idea [idea1]
+  report map [i -> (1 - i)] idea1
+end
+
+
+;; not (a xor b) is same as (a + b) mod 2
+to-report xor-idea [idea1 idea2]
+  report (map [ [a b] -> (a + b) mod 2  ] idea1 idea2)
+end
+
+to-report compare-idea [idea1 idea2]
+  report (sum   (invert-idea (xor-idea idea1 idea2) ) )  / n-idea
+end
+
+
+;; TODO clean this up
+
+to test
+  let idea1 n-values n-idea [0]
+  if ( compare-idea idea1 idea1  != 1) [show "compare-idea failed test 1"]
+  let idea2 n-values n-idea [0]
+  set idea2 replace-item 0 idea2 1
+  if ( compare-idea idea1 idea2 != (n-idea - 1) / n-idea ) [show "compare-idea failed test 2"]
+end
+
+;; GO
+
 to go
   ;; TBD
+  tick
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -121,12 +162,12 @@ SLIDER
 290
 191
 323
-social-influence
-social-influence
-0
+succ-thresh
+succ-thresh
 1
-0.53
-.01
+50
+5.0
+1
 1
 NIL
 HORIZONTAL
@@ -257,15 +298,60 @@ NIL
 HORIZONTAL
 
 SWITCH
-20
-347
-162
-380
+877
+401
+1019
+434
 random-layout?
 random-layout?
 1
 1
 -1000
+
+SLIDER
+23
+337
+195
+370
+p
+p
+0
+1
+0.2
+.01
+1
+NIL
+HORIZONTAL
+
+SLIDER
+21
+379
+193
+412
+n-idea
+n-idea
+0
+32
+8.0
+1
+1
+NIL
+HORIZONTAL
+
+SLIDER
+20
+256
+192
+289
+T_max
+T_max
+0
+100
+20.0
+1
+1
+NIL
+HORIZONTAL
 
 @#$#@#$#@
 ## WHAT IS IT?
