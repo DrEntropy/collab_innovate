@@ -4,8 +4,8 @@ extensions [nw]
 breed [innovators innovator]
 
 
-innovators-own [idea c_progress t_elapsed]
-globals []
+innovators-own [idea c_progress t_elapsed n_innovations]
+globals [total-innovations rate]
 
 
 to setup
@@ -63,21 +63,59 @@ to-report compare-idea [idea1 idea2]
   report (sum   (invert-idea (xor-idea idea1 idea2) ) )  / n-idea
 end
 
+;; attempt collaboration
+
+to-report collaborate-prob [other-innovator]
+  let d nw:distance-to other-innovator
+  let ham-d compare-idea idea ([idea] of other-innovator)
+  report   (p ^ d) * ham-d
+end
+
+
+
+
 
 ;; TODO clean this up
 
 to test
   let idea1 n-values n-idea [0]
   if ( compare-idea idea1 idea1  != 1) [show "compare-idea failed test 1"]
+
   let idea2 n-values n-idea [0]
   set idea2 replace-item 0 idea2 1
   if ( compare-idea idea1 idea2 != (n-idea - 1) / n-idea ) [show "compare-idea failed test 2"]
+
+  ;; Test probability calculation
 end
+
+to update-total
+  let prev total-innovations
+  set total-innovations (sum [n_innovations] of innovators)
+  set rate total-innovations - prev
+end
+
 
 ;; GO
 
 to go
-  ;; TBD
+  ask innovators  [
+    let other-innovator one-of other innovators
+    if (collaborate-prob other-innovator) > random-float 1 [
+      set c_progress c_progress + 1 ]
+
+    if-else c_progress = succ-thresh [
+      set n_innovations n_innovations + 1
+      reset-innovator
+    ] [
+      set t_elapsed t_elapsed + 1
+
+      if t_elapsed > T_max [
+        reset-innovator
+        ;; TODO track these failures
+      ]
+    ]
+  ]
+  update-total
   tick
 end
 @#$#@#$#@
@@ -117,7 +155,7 @@ N_Agents
 N_Agents
 0
 500
-89.0
+166.0
 1
 1
 NIL
@@ -317,7 +355,7 @@ p
 p
 0
 1
-0.2
+0.75
 .01
 1
 NIL
@@ -352,6 +390,24 @@ T_max
 1
 NIL
 HORIZONTAL
+
+PLOT
+704
+55
+904
+205
+plot 1
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" ""
+PENS
+"default" 1.0 0 -16777216 true "" "plot rate"
 
 @#$#@#$#@
 ## WHAT IS IT?
