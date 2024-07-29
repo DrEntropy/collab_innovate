@@ -1,6 +1,12 @@
 ## First model
 
-First model July 29 illustrates how innovation rate depends on the network structure and the probability of innovation, but the rate settles down quite quickly.  I may want to have a model that changes the network over time?  Some ideas:
+First model July 29 illustrates how innovation rate depends on the network structure and the probability of innovation, but the rate settles down quite quickly.
+
+Note that parameters should be adjusted so that there are a few ticks (?) between successeful innovations. In this regime the histogram of innovations by firm is more power law ish.  In regimes were several innovations happen in a row, the histogram is approximately normal centered on the mean number of innovations per firm.  
+
+
+
+  I may want to have a model that changes the network over time?  Some ideas:
 
 * Add new connections (as discussed previously)
 
@@ -16,5 +22,6 @@ First model July 29 illustrates how innovation rate depends on the network struc
 
 * How does the rate of innovation change as we vary the similarity measure between ideas?
 
-* what is the distribution of innovation success among the innovators?  Is it a power law?
+* what is the distribution of innovation success among the innovators?  Is it a power law? How does it depend on the network statistics for that firm? (Centrality, clustering, etc)
 
+* distribution of innovation time  ? How many ticks to succeed?  How does this depend on the firms network statistics?  

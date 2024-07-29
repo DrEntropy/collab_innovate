@@ -38,6 +38,7 @@ end
 to reset-innovator
   set t_elapsed 0
   set c_progress 0
+  random-idea  ;; consider instead a mutation?
 end
 
 
@@ -155,7 +156,7 @@ N_Agents
 N_Agents
 0
 500
-153.0
+201.0
 1
 1
 NIL
@@ -355,7 +356,7 @@ p
 p
 0
 1
-0.75
+0.6
 .01
 1
 NIL
@@ -385,7 +386,7 @@ T_max
 T_max
 0
 100
-40.0
+50.0
 1
 1
 NIL
