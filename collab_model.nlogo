@@ -155,7 +155,7 @@ N_Agents
 N_Agents
 0
 500
-166.0
+153.0
 1
 1
 NIL
@@ -233,7 +233,7 @@ CHOOSER
 network-type
 network-type
 "random" "watts-strogatz" "preferential-attachment"
-0
+1
 
 SLIDER
 687
@@ -342,7 +342,7 @@ SWITCH
 434
 random-layout?
 random-layout?
-1
+0
 1
 -1000
 
@@ -385,18 +385,18 @@ T_max
 T_max
 0
 100
-39.0
+40.0
 1
 1
 NIL
 HORIZONTAL
 
 PLOT
-704
-55
-904
-205
-plot 1
+682
+24
+882
+174
+InnovationRate
 NIL
 NIL
 0.0
@@ -408,6 +408,24 @@ false
 "" ""
 PENS
 "default" 1.0 0 -16777216 true "" "plot rate"
+
+PLOT
+924
+38
+1290
+313
+Success distribution
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"\nset-plot-y-range 0 40\nset-histogram-num-bars 6" "set-plot-x-range 0 (max [n_innovations] of innovators) + 1\n"
+PENS
+"default" 1.0 1 -16777216 true "" "histogram [n_innovations] of innovators"
 
 @#$#@#$#@
 ## WHAT IS IT?
