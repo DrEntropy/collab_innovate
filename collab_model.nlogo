@@ -5,7 +5,7 @@ breed [innovators innovator]
 
 innovators-own [idea c-progress t-elapsed n-innovations n-failures success-rate]
 
-globals [total-innovations rate max-success-rate]
+globals [total-innovations rate max-success-rate max-innovations]
 
 
 to setup
@@ -39,7 +39,10 @@ end
 ;; consider also log transform
 to color-innovators
   ask innovators [
-    set color scale-color blue success-rate 0 max-success-rate
+    if-else color-by-count
+        [set color scale-color blue n-innovations 0 max-innovations ]
+
+    [set color scale-color blue success-rate 0 max-success-rate]
   ]
 end
 
@@ -74,10 +77,23 @@ end
 
 to-report collaborate-prob [other-innovator]
   let d nw:distance-to other-innovator
-  let ham-d compare-idea idea ([idea] of other-innovator)
+  let ham-d ifelse-value n-idea > 0 [
+    compare-idea idea ([idea] of other-innovator)] [1]
   report ifelse-value d = false [0] [ (p ^ d) * ham-d]
 end
 
+;; combine idea with collaborator using 'uniform crossover'
+
+to-report combine-ideas [idea1 idea2]
+  let new-idea (map [ [a b] -> ifelse-value (random 2 = 0) [a] [b] ] idea1 idea2)
+  report new-idea
+end
+
+
+to mutate-idea
+  let new-idea map [i -> ifelse-value (random-float 1 < mutation-rate) [(1 - i)] [i]] idea
+  set idea new-idea
+end
 
 
 
@@ -98,6 +114,8 @@ to update-total
   let prev total-innovations
   set total-innovations (sum [n-innovations] of innovators)
   set rate total-innovations - prev
+  set max-innovations max [n-innovations] of innovators
+  set max-success-rate max [success-rate] of innovators
 end
 
 
@@ -108,18 +126,20 @@ to go
     let other-innovator one-of other innovators
 
     if (collaborate-prob other-innovator) > random-float 1 [
-      set c-progress c-progress + 1 ] ;; make progress toward invention
-
+      set c-progress c-progress + 1 ;; make progress toward invention
+      set idea combine-ideas idea [idea] of other-innovator
+     ]
     if-else c-progress = succ-thresh [
       set n-innovations n-innovations + 1   ;; successful innovation!
       reset-innovator                       ;; start again
-      random-idea
       ] [
       set t-elapsed t-elapsed + 1   ;; not yet
-      if t-elapsed > T-max [        ;; time ran out, investors lost patience
-        reset-innovator
-        random-idea
-        set n-failures n-failures + 1
+      if not no-fail [
+        if t-elapsed > T-max [        ;; time ran out, investors lost patience
+          reset-innovator
+          mutate-idea
+          set n-failures n-failures + 1
+        ]
       ]
     ]
   let total-attempts n-innovations + n-failures
@@ -130,7 +150,7 @@ to go
       set success-rate 0
        ]
   ]
-  set max-success-rate max [success-rate] of turtles
+
   color-innovators
   update-total
   tick
@@ -179,10 +199,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-29
-202
-92
-235
+25
+164
+88
+197
 NIL
 setup
 NIL
@@ -196,10 +216,10 @@ NIL
 1
 
 BUTTON
-111
-202
-174
-235
+107
+164
+170
+197
 NIL
 go
 T
@@ -229,9 +249,9 @@ HORIZONTAL
 
 SLIDER
 1080
-418
+477
 1252
-451
+510
 prob
 prob
 0
@@ -243,20 +263,20 @@ NIL
 HORIZONTAL
 
 CHOOSER
-19
-93
-200
-138
+884
+342
+1065
+387
 network-type
 network-type
 "random" "watts-strogatz" "preferential-attachment"
-0
+1
 
 SLIDER
 687
-383
+442
 859
-416
+475
 WS-max
 WS-max
 0
@@ -269,9 +289,9 @@ HORIZONTAL
 
 TEXTBOX
 871
-344
+403
 1109
-372
+431
 Parameters for network generation
 11
 0.0
@@ -279,9 +299,9 @@ Parameters for network generation
 
 SLIDER
 887
-383
+442
 1060
-416
+475
 min-degree
 min-degree
 1
@@ -294,9 +314,9 @@ HORIZONTAL
 
 TEXTBOX
 1083
-399
+458
 1233
-417
+476
 Random
 11
 0.0
@@ -304,9 +324,9 @@ Random
 
 TEXTBOX
 694
-368
+427
 844
-386
+445
 Watts Strogatz
 11
 0.0
@@ -314,9 +334,9 @@ Watts Strogatz
 
 SLIDER
 688
-423
+482
 860
-456
+515
 rewire-prob
 rewire-prob
 0
@@ -329,34 +349,19 @@ HORIZONTAL
 
 TEXTBOX
 897
-366
+425
 1047
-384
+443
 Preferential Attachment
 11
 0.0
 1
 
-SLIDER
-25
-151
-197
-184
-influencer-weight
-influencer-weight
-0
-1
-0.35
-.05
-1
-NIL
-HORIZONTAL
-
 SWITCH
 911
-423
+482
 1053
-456
+515
 random-layout?
 random-layout?
 0
@@ -372,7 +377,7 @@ p
 p
 0
 1
-0.6
+0.66
 .01
 1
 NIL
@@ -387,7 +392,7 @@ n-idea
 n-idea
 0
 32
-8.0
+32.0
 1
 1
 NIL
@@ -402,7 +407,7 @@ T-max
 T-max
 0
 100
-50.0
+34.0
 1
 1
 NIL
@@ -455,14 +460,65 @@ max-success-rate
 1
 11
 
+TEXTBOX
+23
+419
+173
+447
+Set n-idea to 0 to only use network distance
+11
+0.0
+1
+
+SLIDER
+35
+461
+207
+494
+mutation-rate
+mutation-rate
+0
+0.5
+0.05
+.01
+1
+NIL
+HORIZONTAL
+
+SWITCH
+298
+461
+401
+494
+no-fail
+no-fail
+1
+1
+-1000
+
+SWITCH
+455
+469
+591
+502
+color-by-count
+color-by-count
+0
+1
+-1000
+
 @#$#@#$#@
 ## WHAT IS IT?
 
-This is a model of innovation through collaboration. Innovators try to find others to join forces with. If the they find enough collaborators soon enough, they are successful. Otherwise they fail.  In either case they come up with a new idea and try again.
+This is a model of innovation through collaboration. Innovators try to find others to join forces with. If the they find enough collaborators soon enough, they are successful. Otherwise they fail.  
   
 ## HOW IT WORKS
 
 Innovators have 'ideas' which are represented by a bit vector. Each time step they randomly select another innovator and attempt to collaborate with them. The probability depends on the Hamming distance between the ideas as well as the distance on the network.
+
+On a success, the innovator creates a new idea that is a combination of its idea and the other innovators ('uniform crossover'). This brings their ideas closer. 
+
+We require succ-thresh successes to 'innovate'.  If we do not achieve that within some time period we call that a failure and we mutate the idea.
  
 
 
@@ -485,6 +541,8 @@ Some ideas for exentions:
 * Kill off agents that are not successful and replace them with new random agents. (How to attach to network? Preferential to success rate?) 
 
 * Add new connections between successful collaborators.
+
+* Currently only the active turtle has its idea modified by the collaboration, perhaps both should.
 
 ## NETLOGO FEATURES
 
