@@ -1,11 +1,10 @@
-;; this is my version before watching solution . See 7b for modifications based on video solution
 extensions [nw]
 
+;; Innovators is a better term for these then 'turtles'
 breed [innovators innovator]
 
-
-innovators-own [idea c_progress t_elapsed n_innovations]
-globals [total-innovations rate]
+innovators-own [idea c-progress t-elapsed n-innovations n-failures success-rate]
+globals [total-innovations rate max-success-rate]
 
 
 to setup
@@ -14,11 +13,11 @@ to setup
   ;; create agents
 
   (ifelse network-type = "random" [
-    nw:generate-random innovators links N_agents prob ]
+    nw:generate-random innovators links N-agents prob ]
   network-type  = "watts-strogatz" [
-    nw:generate-watts-strogatz innovators links N_agents WS-max rewire-prob ]
+    nw:generate-watts-strogatz innovators links N-agents WS-max rewire-prob ]
   network-type = "preferential-attachment" [
-    nw:generate-preferential-attachment innovators links N_agents min-degree
+    nw:generate-preferential-attachment innovators links N-agents min-degree
     ]
   [ stop ])
 
@@ -35,9 +34,17 @@ to setup
 
 end
 
+
+;; consider also log transform
+to color-innovators
+  ask innovators [
+    set color scale-color blue success-rate 0 max-success-rate
+  ]
+end
+
 to reset-innovator
-  set t_elapsed 0
-  set c_progress 0
+  set t-elapsed 0
+  set c-progress 0
   random-idea  ;; consider instead a mutation?
 end
 
@@ -47,7 +54,6 @@ end
 
 to random-idea
   set idea n-values n-idea [random 2]
-
 end
 
 to-report invert-idea [idea1]
@@ -91,7 +97,7 @@ end
 
 to update-total
   let prev total-innovations
-  set total-innovations (sum [n_innovations] of innovators)
+  set total-innovations (sum [n-innovations] of innovators)
   set rate total-innovations - prev
 end
 
@@ -102,20 +108,29 @@ to go
   ask innovators  [
     let other-innovator one-of other innovators
     if (collaborate-prob other-innovator) > random-float 1 [
-      set c_progress c_progress + 1 ]
+      set c-progress c-progress + 1 ]
 
-    if-else c_progress = succ-thresh [
-      set n_innovations n_innovations + 1
+    if-else c-progress = succ-thresh [
+      set n-innovations n-innovations + 1
       reset-innovator
     ] [
-      set t_elapsed t_elapsed + 1
+      set t-elapsed t-elapsed + 1
 
-      if t_elapsed > T_max [
+      if t-elapsed > T-max [
         reset-innovator
-        ;; TODO track these failures
+        set n-failures n-failures + 1
       ]
     ]
+  let total-attempts n-innovations + n-failures
+  if-else total-attempts > 0 [
+      set success-rate n-innovations / total-attempts
+      ]
+      [
+      set success-rate 0
+       ]
   ]
+  set max-success-rate max [success-rate] of turtles
+  color-innovators
   update-total
   tick
 end
@@ -152,8 +167,8 @@ SLIDER
 19
 197
 52
-N_Agents
-N_Agents
+N-Agents
+N-Agents
 0
 500
 201.0
@@ -212,10 +227,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-692
-314
-864
-347
+1080
+418
+1252
+451
 prob
 prob
 0
@@ -252,20 +267,20 @@ NIL
 HORIZONTAL
 
 TEXTBOX
-721
-263
-959
-291
+871
+344
+1109
+372
 Parameters for network generation
 11
 0.0
 1
 
 SLIDER
-872
-363
-1044
-396
+887
+383
+1060
+416
 min-degree
 min-degree
 1
@@ -277,10 +292,10 @@ NIL
 HORIZONTAL
 
 TEXTBOX
-701
-295
-851
-313
+1083
+399
+1233
+417
 Random
 11
 0.0
@@ -288,9 +303,9 @@ Random
 
 TEXTBOX
 694
-360
+368
 844
-378
+386
 Watts Strogatz
 11
 0.0
@@ -312,10 +327,10 @@ NIL
 HORIZONTAL
 
 TEXTBOX
-882
-346
-1032
-364
+897
+366
+1047
+384
 Preferential Attachment
 11
 0.0
@@ -337,10 +352,10 @@ NIL
 HORIZONTAL
 
 SWITCH
-877
-401
-1019
-434
+911
+423
+1053
+456
 random-layout?
 random-layout?
 0
@@ -382,8 +397,8 @@ SLIDER
 256
 192
 289
-T_max
-T_max
+T-max
+T-max
 0
 100
 50.0
@@ -393,10 +408,10 @@ NIL
 HORIZONTAL
 
 PLOT
-682
-24
-882
-174
+704
+45
+904
+195
 InnovationRate
 NIL
 NIL
@@ -424,18 +439,31 @@ NIL
 10.0
 true
 false
-"\nset-plot-y-range 0 40\nset-histogram-num-bars 6" "set-plot-x-range 0 (max [n_innovations] of innovators) + 1\n"
+"\nset-plot-y-range 0 40\nset-histogram-num-bars 6" "set-plot-x-range 0 (max [n-innovations] of innovators) + 1\n"
 PENS
-"default" 1.0 1 -16777216 true "" "histogram [n_innovations] of innovators"
+"default" 1.0 1 -16777216 true "" "histogram [n-innovations] of innovators"
+
+MONITOR
+742
+257
+853
+302
+NIL
+max-success-rate
+17
+1
+11
 
 @#$#@#$#@
 ## WHAT IS IT?
 
-(a general understanding of what the model is trying to show or explain)
-
+This is a model of innovation through collaboration. Innovators try to find others to join forces with. If the they find enough collaborators soon enough, they are successful. Otherwise they fail.  In either case they come up with a new idea and try again.
+  
 ## HOW IT WORKS
 
-(what rules the agents use to create the overall behavior of the model)
+Innovators have 'ideas' which are represented by a bit vector. Each time step they randomly select another innovator and attempt to collaborate with them. The probability depends on the Hamming distance between the ideas as well as the distance on the network.
+ 
+
 
 ## HOW TO USE IT
 
@@ -451,7 +479,11 @@ PENS
 
 ## EXTENDING THE MODEL
 
-(suggested things to add or change in the Code tab to make the model more complicated, detailed, accurate, etc.)
+Some ideas for exentions:
+
+* Kill off agents that are not successful and replace them with new random agents. (How to attach to network? Preferential to success rate?) 
+
+* Add new connections between successful collaborators.
 
 ## NETLOGO FEATURES
 
