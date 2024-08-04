@@ -4,13 +4,14 @@ extensions [nw]
 breed [innovators innovator]
 
 innovators-own [idea c-progress t-elapsed n-innovations n-failures success-rate]
+
 globals [total-innovations rate max-success-rate]
 
 
 to setup
   ca
 
-  ;; create agents
+  ;; create agents on network
 
   (ifelse network-type = "random" [
     nw:generate-random innovators links N-agents prob ]
@@ -45,7 +46,6 @@ end
 to reset-innovator
   set t-elapsed 0
   set c-progress 0
-  random-idea  ;; consider instead a mutation?
 end
 
 
@@ -82,7 +82,7 @@ end
 
 
 
-;; TODO clean this up
+;; TODO  add more tests
 
 to test
   let idea1 n-values n-idea [0]
@@ -92,7 +92,6 @@ to test
   set idea2 replace-item 0 idea2 1
   if ( compare-idea idea1 idea2 != (n-idea - 1) / n-idea ) [show "compare-idea failed test 2"]
 
-  ;; Test probability calculation
 end
 
 to update-total
@@ -107,17 +106,19 @@ end
 to go
   ask innovators  [
     let other-innovator one-of other innovators
+
     if (collaborate-prob other-innovator) > random-float 1 [
-      set c-progress c-progress + 1 ]
+      set c-progress c-progress + 1 ] ;; make progress toward invention
 
     if-else c-progress = succ-thresh [
-      set n-innovations n-innovations + 1
-      reset-innovator
-    ] [
-      set t-elapsed t-elapsed + 1
-
-      if t-elapsed > T-max [
+      set n-innovations n-innovations + 1   ;; successful innovation!
+      reset-innovator                       ;; start again
+      random-idea
+      ] [
+      set t-elapsed t-elapsed + 1   ;; not yet
+      if t-elapsed > T-max [        ;; time ran out, investors lost patience
         reset-innovator
+        random-idea
         set n-failures n-failures + 1
       ]
     ]
@@ -171,7 +172,7 @@ N-Agents
 N-Agents
 0
 500
-201.0
+140.0
 1
 1
 NIL
@@ -235,7 +236,7 @@ prob
 prob
 0
 1
-0.36
+0.09
 .01
 1
 NIL
@@ -249,7 +250,7 @@ CHOOSER
 network-type
 network-type
 "random" "watts-strogatz" "preferential-attachment"
-1
+0
 
 SLIDER
 687
