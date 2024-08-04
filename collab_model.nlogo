@@ -5,12 +5,12 @@ breed [innovators innovator]
 
 innovators-own [idea c-progress t-elapsed n-innovations n-failures success-rate]
 
-globals [total-innovations rate max-success-rate max-innovations]
+globals [total-innovations rate max-success-rate max-innovations average-innovation-rate n-accum]
 
 
 to setup
   ca
-
+  set n-accum 100  ;; constant number for running average
   ;; create agents on network
 
   (ifelse network-type = "random" [
@@ -116,6 +116,9 @@ to update-total
   set rate total-innovations - prev
   set max-innovations max [n-innovations] of innovators
   set max-success-rate max [success-rate] of innovators
+  ;; exponential moving average
+  set average-innovation-rate average-innovation-rate * (1 - 1 / n-accum)
+  set average-innovation-rate average-innovation-rate + rate / n-accum
 end
 
 
@@ -241,7 +244,7 @@ succ-thresh
 succ-thresh
 1
 50
-10.0
+11.0
 1
 1
 NIL
@@ -431,24 +434,6 @@ false
 PENS
 "default" 1.0 0 -16777216 true "" "plot rate"
 
-PLOT
-924
-38
-1290
-313
-Success distribution
-NIL
-NIL
-0.0
-10.0
-0.0
-10.0
-true
-false
-"\nset-plot-y-range 0 40\nset-histogram-num-bars 6" "set-plot-x-range 0 (max [n-innovations] of innovators) + 1\n"
-PENS
-"default" 1.0 1 -16777216 true "" "histogram [n-innovations] of innovators"
-
 MONITOR
 742
 257
@@ -507,10 +492,35 @@ color-by-count
 1
 -1000
 
+TEXTBOX
+992
+46
+1142
+74
+TODO: ADD PLOT Of number of innovations vs centrality
+11
+0.0
+1
+
+MONITOR
+756
+213
+887
+258
+Mean innovation rate
+average-innovation-rate
+17
+1
+11
+
 @#$#@#$#@
 ## WHAT IS IT?
 
-This is a model of innovation through collaboration. Innovators try to find others to join forces with. If the they find enough collaborators soon enough, they are successful. Otherwise they fail.  
+This is a model of innovation through collaboration. Innovators try to find others to join forces with. If the they find enough collaborators soon enough, they are successful. Otherwise they fail.   In this system 'fitness' is emergent: innovators are more successful if their ideas are similar to nearby innovators. 
+
+The idea is to examine:
+- How network structure effects overall rate of innovation
+- How network centrality measures effect individual rate of innovation
   
 ## HOW IT WORKS
 
@@ -518,9 +528,8 @@ Innovators have 'ideas' which are represented by a bit vector. Each time step th
 
 On a success, the innovator creates a new idea that is a combination of its idea and the other innovators ('uniform crossover'). This brings their ideas closer. 
 
-We require succ-thresh successes to 'innovate'.  If we do not achieve that within some time period we call that a failure and we mutate the idea.
+We require succ-thresh successes to 'innovate'.  If we do not achieve that within some time period we call that a failure and we apply a random mutation to the innovator's idea, perhaps bringing it closer to it's neihbors if it is lucky.
  
-
 
 ## HOW TO USE IT
 
@@ -543,6 +552,8 @@ Some ideas for exentions:
 * Add new connections between successful collaborators.
 
 * Currently only the active turtle has its idea modified by the collaboration, perhaps both should.
+
+* Inspect robustness of innovation to eliminating key network nodes. 
 
 ## NETLOGO FEATURES
 
