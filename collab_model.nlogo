@@ -6,12 +6,13 @@ breed [innovators innovator]
 innovators-own [idea c-progress t-elapsed n-innovations n-failures success-rate centrality]
 
 globals [total-innovations rate max-success-rate max-innovations max-centrality
-         average-innovation-rate n-accum average-idea selected delete-clicked?]
+         average-innovation-rate average-idea selected delete-clicked? no-fail]
 
 
 to setup
   ca
-  set n-accum 1000  ;; constant number for running average
+  ;; for debuging only
+  set no-fail false
   ;; create agents on network
   set selected nobody
   set average-idea n-values n-idea [0]
@@ -45,12 +46,19 @@ to setup
 
 end
 
+to reset-stats
+ask innovators [
+    set n-innovations 0
+    set n-failures 0
+  ]
+  set total-innovations 0
+end
 
 
 
 to-report calculate-average-idea
   let total-ideas n-values n-idea [0]
-  ask turtles [
+  ask innovators [
     set total-ideas (map [[?1 ?2] -> sum list ?1 ?2] total-ideas idea)
   ]
   report map [ ? -> round (? / count turtles)] total-ideas
@@ -61,33 +69,36 @@ end
 to color-innovators
   ask innovators [
     (ifelse color-by = "innovation count"
-        [set color scale-color blue n-innovations 0 max-innovations ]
-    ;;color-by = "success rate"
-     ;;   [set color scale-color blue success-rate 0 max-success-rate]
-    color-by = "idea"
-    [
-    let bit-string-to-int reduce [ [result bit] -> result * 2 + bit ] idea
-    let hue (bit-string-to-int mod 360)  ;; Map the integer to a hue value between 0 and 360
-    set color hsb hue 100 100  ;; Set color using the HSB model with full saturation and brightness
-     ]
-    color-by = "idea distance from average"
+      [set color scale-color blue n-innovations 0 max-innovations ]
+      ;;color-by = "success rate"
+      ;;   [set color scale-color blue success-rate 0 max-success-rate]
+      color-by = "idea"
       [
-      let simularity hamming-d idea average-idea
-      let hue simularity / n-idea * 360 ; Map to hue range 0-360
-      set color hsb hue 100 100 ;
+        if n-idea = 0 [stop]
+        let bit-string-to-int reduce [ [result bit] -> result * 2 + bit ] idea
+        let hue (bit-string-to-int mod 360)  ;; Map the integer to a hue value between 0 and 360
+        set color hsb hue 100 100  ;; Set color using the HSB model with full saturation and brightness
       ]
-    color-by = "idea distance from selected"
+      color-by = "idea distance from average"
       [
-      ifelse selected != nobody [
+        if n-idea = 0 [stop]
+        let simularity hamming-d idea average-idea
+        let hue simularity / n-idea * 360 ; Map to hue range 0-360
+        set color hsb hue 100 100 ;
+      ]
+      color-by = "idea distance from selected"
+      [
+        if n-idea = 0 [stop]
+        ifelse selected != nobody [
           let simularity hamming-d idea [idea] of selected
           let hue simularity / n-idea * 360 ; Map to hue range 0-360
           set color hsb hue 100 100 ;
         ]
         [set color hsb 180 100 100]
       ]
-    color-by = "centrality"
-    [set color scale-color blue centrality 0 max-centrality]
-    [])
+      color-by = "centrality"
+      [set color scale-color blue centrality 0 max-centrality]
+      [])
   ]
 end
 
@@ -287,10 +298,10 @@ NIL
 HORIZONTAL
 
 BUTTON
-25
-164
-88
-197
+34
+120
+97
+153
 NIL
 setup
 NIL
@@ -304,10 +315,10 @@ NIL
 1
 
 BUTTON
-107
-164
-170
-197
+116
+120
+179
+153
 NIL
 go
 T
@@ -329,7 +340,7 @@ succ-thresh
 succ-thresh
 1
 50
-10.0
+2.0
 1
 1
 NIL
@@ -429,7 +440,7 @@ rewire-prob
 rewire-prob
 0
 1
-0.25
+0.1
 .05
 1
 NIL
@@ -446,10 +457,10 @@ Preferential Attachment
 1
 
 SWITCH
-911
-482
-1053
-515
+291
+456
+433
+489
 random-layout?
 random-layout?
 1
@@ -465,22 +476,22 @@ p
 p
 0
 1
-0.66
+0.45
 .01
 1
 NIL
 HORIZONTAL
 
 SLIDER
-21
-379
-193
-412
+23
+62
+195
+95
 n-idea
 n-idea
 0
 32
-16.0
+32.0
 1
 1
 NIL
@@ -495,7 +506,7 @@ T-max
 T-max
 0
 100
-40.0
+38.0
 1
 1
 NIL
@@ -507,8 +518,8 @@ PLOT
 904
 195
 InnovationRate
-NIL
-NIL
+Mean innovation rate
+ticks
 0.0
 10.0
 0.0
@@ -517,34 +528,24 @@ true
 false
 "" ""
 PENS
-"default" 1.0 0 -16777216 true "" "plot rate"
+"default" 1.0 0 -16777216 true "" "plot average-innovation-rate"
 
 MONITOR
-712
-273
-823
-318
-NIL
-max-success-rate
+706
+271
+817
+316
+avg success rate
+mean [success-rate] of innovators
 17
 1
 11
 
-TEXTBOX
-23
-419
-173
-447
-Set n-idea to 0 to only use network distance
-11
-0.0
-1
-
 SLIDER
-35
-461
-207
-494
+21
+213
+193
+246
 mutation-rate
 mutation-rate
 0
@@ -555,32 +556,11 @@ mutation-rate
 NIL
 HORIZONTAL
 
-SWITCH
-298
-461
-401
-494
-no-fail
-no-fail
-1
-1
--1000
-
-TEXTBOX
-705
-363
-855
-391
-TODO: ADD PLOT Of number of innovations vs centrality
-11
-0.0
-1
-
 MONITOR
-709
-208
-840
-253
+705
+213
+836
+258
 Mean innovation rate
 average-innovation-rate
 17
@@ -595,7 +575,7 @@ CHOOSER
 color-by
 color-by
 "innovation count" "idea" "idea distance from average" "idea distance from selected" "centrality"
-4
+1
 
 MONITOR
 916
@@ -609,10 +589,10 @@ average-idea
 11
 
 BUTTON
-453
-507
-576
-540
+692
+349
+815
+382
 delete innovator
 set delete-clicked? true
 NIL
@@ -628,7 +608,7 @@ NIL
 MONITOR
 915
 234
-1261
+1259
 279
 NIL
 [idea] of selected
@@ -642,8 +622,8 @@ PLOT
 1221
 219
 Innovations vs Centrality
-NIL
-NIL
+Centrality
+Normalized Innovations
 0.0
 10.0
 0.0
@@ -653,6 +633,38 @@ false
 "" "clear-plot\nset-plot-y-range 0 1"
 PENS
 "default" 1.0 2 -16777216 true "" "ask innovators [plotxy centrality (n-innovations / max-innovations)]"
+
+SLIDER
+703
+10
+830
+43
+n-accum
+n-accum
+10
+2000
+540.0
+10
+1
+NIL
+HORIZONTAL
+
+BUTTON
+63
+166
+156
+199
+NIL
+reset-stats
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
@@ -674,7 +686,9 @@ We require succ-thresh successes to 'innovate'.  If we do not achieve that withi
 
 ## HOW TO USE IT
 
-blah blaj
+Note that if you set the idea size to 0, then only the network distance will determine innovation success.
+
+I find things are more interesting if you adjust the paraemeters to have about 70% average success rate. Note that the average success rate is computed over the entire run. Use 'reset-stats' to get a fresh computation.
 
 ## THINGS TO NOTICE
 
@@ -682,7 +696,12 @@ blah blaj
 
 ## THINGS TO TRY
 
-(suggested things for the user to try to do (move sliders, switches, etc.) with the model)
+- adjust p and observe the change in innovation rate. This could represent, in the real world, the impact of making it more difficult to communicate with potential collaborators.  Try observing the effect of other parameters.
+
+-  Try selecting and deleting important (high centrality) nodes. Do you see an appreciable effect? I only found an appreciable effect with a network generated by preferential attachment. This is probably best explored by running multiple sims using BehaviorSpace.
+
+- If you set the success threshold low (e.g. 1) with a high number for T-max, the whole network will settle down to a single idea .. There is also a regime where the 'idea' will remain stable for a while and then jump to another stable state. Color by 'idea' to see this effect.
+
 
 ## EXTENDING THE MODEL
 
