@@ -6,16 +6,17 @@ breed [innovators innovator]
 innovators-own [idea c-progress t-elapsed n-innovations n-failures success-rate centrality]
 
 globals [total-innovations rate max-success-rate max-innovations max-centrality
-         average-innovation-rate n-accum average-idea]
+         average-innovation-rate n-accum average-idea selected delete-clicked?]
 
 
 to setup
   ca
-  set n-accum 100  ;; constant number for running average
+  set n-accum 1000  ;; constant number for running average
   ;; create agents on network
-
+  set selected nobody
   set average-idea n-values n-idea [0]
-
+  set delete-clicked? false
+  set max-innovations 1 ;; to avoid issues with plot
   ask innovators [ set color black]
 
   (ifelse network-type = "random" [
@@ -75,6 +76,15 @@ to color-innovators
       let hue simularity / n-idea * 360 ; Map to hue range 0-360
       set color hsb hue 100 100 ;
       ]
+    color-by = "idea distance from selected"
+      [
+      ifelse selected != nobody [
+          let simularity hamming-d idea [idea] of selected
+          let hue simularity / n-idea * 360 ; Map to hue range 0-360
+          set color hsb hue 100 100 ;
+        ]
+        [set color hsb 180 100 100]
+      ]
     color-by = "centrality"
     [set color scale-color blue centrality 0 max-centrality]
     [])
@@ -104,9 +114,7 @@ to-report xor-idea [idea1 idea2]
   report (map [ [a b] -> (a + b) mod 2  ] idea1 idea2)
 end
 
-;;to-report compare-idea [idea1 idea2]
-;;  report (sum   (invert-idea (xor-idea idea1 idea2) ) )  / n-idea
-;;end
+
 
 
 to-report hamming-d [idea1 idea2]
@@ -157,10 +165,7 @@ to test
 
 end
 
-to update-total
-  let prev total-innovations
-  set total-innovations (sum [n-innovations] of innovators)
-  set rate total-innovations - prev
+to update-stats
   set max-innovations max [n-innovations] of innovators
   set max-success-rate max [success-rate] of innovators
   ;; exponential moving average
@@ -173,6 +178,7 @@ end
 ;; GO
 
 to go
+  let prev total-innovations
   ask innovators  [
     let other-innovator one-of other innovators
 
@@ -182,6 +188,7 @@ to go
      ]
     if-else c-progress = succ-thresh [
       set n-innovations n-innovations + 1   ;; successful innovation!
+      set total-innovations total-innovations + 1 ;; seperately track
       reset-innovator                       ;; start again
       ] [
       set t-elapsed t-elapsed + 1   ;; not yet
@@ -201,10 +208,40 @@ to go
       set success-rate 0
        ]
   ]
-  update-total
+  set rate total-innovations - prev
+  update-stats
   color-innovators
-
+  select-innovator
+  if delete-clicked? [delete-selected]
   tick
+end
+
+
+to delete-selected
+  set delete-clicked? false
+  if selected != nobody
+  [ask selected [die]
+   ask innovators [
+      set centrality nw:betweenness-centrality
+    ]
+   set max-centrality max [centrality] of innovators
+  ]
+end
+
+
+to select-innovator
+
+  if mouse-down? [
+    ; pick the closet turtle
+    set selected min-one-of turtles [distancexy mouse-xcor mouse-ycor]
+    ; check whether or not it's close enough
+    ifelse [distancexy mouse-xcor mouse-ycor] of selected > 1 [
+      set selected nobody ; if not, don't select it
+      reset-perspective
+    ][
+      watch selected ; if it is, go ahead and `watch` it
+    ]
+  ]
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
@@ -483,10 +520,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot rate"
 
 MONITOR
-742
-257
-853
-302
+712
+273
+823
+318
 NIL
 max-success-rate
 17
@@ -512,7 +549,7 @@ mutation-rate
 mutation-rate
 0
 0.5
-0.05
+0.02
 .01
 1
 NIL
@@ -530,20 +567,20 @@ no-fail
 -1000
 
 TEXTBOX
-992
-46
-1142
-74
+705
+363
+855
+391
 TODO: ADD PLOT Of number of innovations vs centrality
 11
 0.0
 1
 
 MONITOR
-756
-213
-887
-258
+709
+208
+840
+253
 Mean innovation rate
 average-innovation-rate
 17
@@ -557,8 +594,8 @@ CHOOSER
 502
 color-by
 color-by
-"innovation count" "idea" "idea distance from average" "centrality"
-1
+"innovation count" "idea" "idea distance from average" "idea distance from selected" "centrality"
+4
 
 MONITOR
 916
@@ -570,6 +607,52 @@ average-idea
 17
 1
 11
+
+BUTTON
+453
+507
+576
+540
+delete innovator
+set delete-clicked? true
+NIL
+1
+T
+OBSERVER
+NIL
+NIL
+NIL
+NIL
+1
+
+MONITOR
+915
+234
+1261
+279
+NIL
+[idea] of selected
+17
+1
+11
+
+PLOT
+938
+30
+1221
+219
+Innovations vs Centrality
+NIL
+NIL
+0.0
+10.0
+0.0
+10.0
+true
+false
+"" "clear-plot\nset-plot-y-range 0 1"
+PENS
+"default" 1.0 2 -16777216 true "" "ask innovators [plotxy centrality (n-innovations / max-innovations)]"
 
 @#$#@#$#@
 ## WHAT IS IT?
