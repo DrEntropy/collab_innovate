@@ -30,7 +30,7 @@ to setup
     ifelse random-layout? [setxy random-xcor random-ycor]
       [ repeat 30 [ layout-spring innovators links 0.2 7 1 ] ]
   ]
-
+  color-innovators
   reset-ticks
 
 end
@@ -39,10 +39,19 @@ end
 ;; consider also log transform
 to color-innovators
   ask innovators [
-    if-else color-by-count
+    (ifelse color-by = "innovation count"
         [set color scale-color blue n-innovations 0 max-innovations ]
-
-    [set color scale-color blue success-rate 0 max-success-rate]
+    color-by = "success rate"
+        [set color scale-color blue success-rate 0 max-success-rate]
+    color-by = "idea"
+    [
+    let bit-string-to-int reduce [ [result bit] -> result * 2 + bit ] idea
+    let hue (bit-string-to-int mod 360)  ;; Map the integer to a hue value between 0 and 360
+    set color hsb hue 100 100  ;; Set color using the HSB model with full saturation and brightness
+     ]
+    color-by = "centrality"
+    [ set color red ]
+    [])
   ]
 end
 
@@ -244,7 +253,7 @@ succ-thresh
 succ-thresh
 1
 50
-11.0
+10.0
 1
 1
 NIL
@@ -344,7 +353,7 @@ rewire-prob
 rewire-prob
 0
 1
-0.35
+0.25
 .05
 1
 NIL
@@ -367,7 +376,7 @@ SWITCH
 515
 random-layout?
 random-layout?
-0
+1
 1
 -1000
 
@@ -395,7 +404,7 @@ n-idea
 n-idea
 0
 32
-32.0
+16.0
 1
 1
 NIL
@@ -410,7 +419,7 @@ T-max
 T-max
 0
 100
-34.0
+40.0
 1
 1
 NIL
@@ -481,17 +490,6 @@ no-fail
 1
 -1000
 
-SWITCH
-455
-469
-591
-502
-color-by-count
-color-by-count
-0
-1
--1000
-
 TEXTBOX
 992
 46
@@ -512,6 +510,16 @@ average-innovation-rate
 17
 1
 11
+
+CHOOSER
+454
+457
+608
+502
+color-by
+color-by
+"innovation count" "idea" "success rate" "centrality"
+1
 
 @#$#@#$#@
 ## WHAT IS IT?
