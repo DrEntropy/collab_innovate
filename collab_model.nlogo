@@ -369,7 +369,7 @@ CHOOSER
 network-type
 network-type
 "random" "watts-strogatz" "preferential-attachment"
-0
+1
 
 SLIDER
 687
@@ -440,7 +440,7 @@ rewire-prob
 rewire-prob
 0
 1
-0.1
+0.2
 .05
 1
 NIL
