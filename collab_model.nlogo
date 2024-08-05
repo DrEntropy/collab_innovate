@@ -3,9 +3,10 @@ extensions [nw]
 ;; Innovators is a better term for these then 'turtles'
 breed [innovators innovator]
 
-innovators-own [idea c-progress t-elapsed n-innovations n-failures success-rate]
+innovators-own [idea c-progress t-elapsed n-innovations n-failures success-rate centrality]
 
-globals [total-innovations rate max-success-rate max-innovations average-innovation-rate n-accum average-idea]
+globals [total-innovations rate max-success-rate max-innovations max-centrality
+         average-innovation-rate n-accum average-idea]
 
 
 to setup
@@ -14,6 +15,8 @@ to setup
   ;; create agents on network
 
   set average-idea n-values n-idea [0]
+
+  ask innovators [ set color black]
 
   (ifelse network-type = "random" [
     nw:generate-random innovators links N-agents prob ]
@@ -28,14 +31,20 @@ to setup
   ask innovators [
     reset-innovator
     random-idea
+    set centrality nw:betweenness-centrality
     ;; seperate spacially
     ifelse random-layout? [setxy random-xcor random-ycor]
       [ repeat 30 [ layout-spring innovators links 0.2 7 1 ] ]
   ]
+
+  set max-centrality max [centrality] of innovators
+
   color-innovators
   reset-ticks
 
 end
+
+
 
 
 to-report calculate-average-idea
@@ -52,8 +61,8 @@ to color-innovators
   ask innovators [
     (ifelse color-by = "innovation count"
         [set color scale-color blue n-innovations 0 max-innovations ]
-    color-by = "success rate"
-        [set color scale-color blue success-rate 0 max-success-rate]
+    ;;color-by = "success rate"
+     ;;   [set color scale-color blue success-rate 0 max-success-rate]
     color-by = "idea"
     [
     let bit-string-to-int reduce [ [result bit] -> result * 2 + bit ] idea
@@ -67,7 +76,7 @@ to color-innovators
       set color hsb hue 100 100 ;
       ]
     color-by = "centrality"
-    [ set color red ]
+    [set color scale-color blue centrality 0 max-centrality]
     [])
   ]
 end
@@ -449,7 +458,7 @@ T-max
 T-max
 0
 100
-20.0
+40.0
 1
 1
 NIL
@@ -548,8 +557,8 @@ CHOOSER
 502
 color-by
 color-by
-"innovation count" "idea" "idea distance from average" "success rate" "centrality"
-2
+"innovation count" "idea" "idea distance from average" "centrality"
+1
 
 MONITOR
 916
@@ -582,7 +591,7 @@ We require succ-thresh successes to 'innovate'.  If we do not achieve that withi
 
 ## HOW TO USE IT
 
-(how to use the model, including a description of each of the items in the Interface tab)
+blah blaj
 
 ## THINGS TO NOTICE
 
@@ -603,6 +612,8 @@ Some ideas for exentions:
 * Currently only the active turtle has its idea modified by the collaboration, perhaps both should.
 
 * Inspect robustness of innovation to eliminating key network nodes. 
+
+* Consider other network centrality measures.
 
 ## NETLOGO FEATURES
 
