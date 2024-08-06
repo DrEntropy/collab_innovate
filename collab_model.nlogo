@@ -79,23 +79,7 @@ to color-innovators
         let hue (bit-string-to-int mod 360)  ;; Map the integer to a hue value between 0 and 360
         set color hsb hue 100 100  ;; Set color using the HSB model with full saturation and brightness
       ]
-      color-by = "idea distance from average"
-      [
-        if n-idea = 0 [stop]
-        let simularity hamming-d idea average-idea
-        let hue simularity / n-idea * 360 ; Map to hue range 0-360
-        set color hsb hue 100 100 ;
-      ]
-      color-by = "idea distance from selected"
-      [
-        if n-idea = 0 [stop]
-        ifelse selected != nobody [
-          let simularity hamming-d idea [idea] of selected
-          let hue simularity / n-idea * 360 ; Map to hue range 0-360
-          set color hsb hue 100 100 ;
-        ]
-        [set color hsb 180 100 100]
-      ]
+
       color-by = "centrality"
       [set color scale-color blue centrality 0 max-centrality]
       [])
@@ -574,7 +558,7 @@ CHOOSER
 502
 color-by
 color-by
-"innovation count" "idea" "idea distance from average" "idea distance from selected" "centrality"
+"innovation count" "idea" "centrality"
 1
 
 MONITOR
