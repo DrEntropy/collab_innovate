@@ -23,7 +23,7 @@ to setup
   (ifelse network-type = "random" [
     nw:generate-random innovators links N-agents prob ]
   network-type  = "watts-strogatz" [
-    nw:generate-watts-strogatz innovators links N-agents WS-max rewire-prob ]
+    nw:generate-watts-strogatz innovators links N-agents neighborhood-size rewire-prob ]
   network-type = "preferential-attachment" [
     nw:generate-preferential-attachment innovators links N-agents min-degree
     ]
@@ -347,10 +347,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-1080
-477
-1252
-510
+1078
+443
+1250
+476
 prob
 prob
 0
@@ -376,8 +376,8 @@ SLIDER
 442
 859
 475
-WS-max
-WS-max
+neighborhood-size
+neighborhood-size
 0
 10
 3.0
@@ -412,10 +412,10 @@ NIL
 HORIZONTAL
 
 TEXTBOX
-1083
-458
-1233
-476
+1081
+424
+1231
+442
 Random
 11
 0.0
@@ -575,7 +575,7 @@ CHOOSER
 color-by
 color-by
 "innovation count" "idea" "idea distance from average" "idea distance from selected" "centrality"
-1
+4
 
 MONITOR
 916
@@ -643,7 +643,7 @@ n-accum
 n-accum
 10
 2000
-540.0
+260.0
 10
 1
 NIL
@@ -667,7 +667,7 @@ NIL
 1
 
 @#$#@#$#@
-## WHAT IS IT?
+## WHAT IS IT? (Scope)
 
 This is a model of innovation through collaboration. Innovators try to find others to join forces with. If the they find enough collaborators soon enough, they are successful. Otherwise they fail.   In this system 'fitness' is emergent: innovators are more successful if their ideas are similar to nearby innovators. 
 
@@ -677,20 +677,63 @@ The idea is to examine:
   
 ## HOW IT WORKS
 
-Innovators have 'ideas' which are represented by a bit vector. Each time step they randomly select another innovator and attempt to collaborate with them. The probability depends on the Hamming distance between the ideas as well as the distance on the network.
+The agents in the model are "innovators" that live on a network environment connected by links. 
+
+Innovators have several properties:
+
+- 'ideas' which are represented by a bit vector.
+
+- 't-elapsed' is how many time steps have elapsed during this innovation attempt.
+
+- 'c-progress' which is the count of successful collaborations. The innovators need increase 'c-progress' to 'succ-thresh' before 't-elapsed' reaches 't-max'.
+
+
+In addition some properites captures statistics:
+
+- n-innovations n-failures success-rate centrality (flesh out)
+
+
+Each time step:
+
+-  Each innovator selects another innovator at random and attempts to collaborate with them. The probability depends on the Hamming distance between the ideas as well as the distance on the network. 
 
 On a success, the innovator creates a new idea that is a combination of its idea and the other innovators ('uniform crossover'). This brings their ideas closer. 
 
-We require succ-thresh successes to 'innovate'.  If we do not achieve that within some time period we call that a failure and we apply a random mutation to the innovator's idea, perhaps bringing it closer to it's neihbors if it is lucky.
+As stated above, we require succ-thresh successes to 'innovate'.  If we do not achieve that within 't-max' we call that a failure and we apply a random mutation to the innovator's idea, perhaps bringing it closer to it's neihbors if it is lucky.
  
 
 ## HOW TO USE IT
 
-Note that if you set the idea size to 0, then only the network distance will determine innovation success.
+There are several parameters that the user can adjust.  The most important are:
+
+- 'p'  TODO
+
+- 'succ-thres' TODO
+ 
+- 'T-max' TODO
+
+- 'mutation rate' TODO
+
+Also important are the choice of network generation algorithm and the parameters for those networks. 
+
+- Random,  which is described by a single parameter, the probability of links.
+
+- Watts Strogatz, which is described by two parameters: neighborhood-size which describes the initial number of nodes connected on each side and rewire-prob which describes the probability of rewiring a connectino.
+
+- Preferential Attachment, which has a single parameter, min-degree which is the number of links each new node has when it first joins the network.
+
+
+Remaining controls are primarily for display purposes:
+
+- 
+
+-
+
+
 
 I find things are more interesting if you adjust the paraemeters to have about 70% average success rate. Note that the average success rate is computed over the entire run. Use 'reset-stats' to get a fresh computation.
 
-
+Note that if you set the idea size to 0, then only the network distance will determine innovation success.
 
 
 ## THINGS TO TRY
