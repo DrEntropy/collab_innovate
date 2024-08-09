@@ -5,21 +5,21 @@ breed [innovators innovator]
 
 innovators-own [idea c-progress t-elapsed n-innovations n-failures success-rate centrality]
 
-globals [total-innovations rate max-success-rate max-innovations max-centrality
-         average-innovation-rate average-idea selected delete-clicked? no-fail]
+globals [total-innovations rate  max-innovations max-centrality
+         average-innovation-rate selected delete-clicked? no-fail]
 
 
 to setup
   ca
   ;; for debuging only
   set no-fail false
-  ;; create agents on network
+
   set selected nobody
-  set average-idea n-values n-idea [0]
+
   set delete-clicked? false
   set max-innovations 1 ;; to avoid issues with plot
-  ask innovators [ set color black]
 
+   ;; create agents on network
   (ifelse network-type = "random" [
     nw:generate-random innovators links N-agents prob ]
   network-type  = "watts-strogatz" [
@@ -34,18 +34,67 @@ to setup
     reset-innovator
     random-idea
     set centrality nw:betweenness-centrality
-    ;; seperate spacially
+    color-innovator
+  ]
+  set max-centrality max [centrality] of innovators
+
+
+   ;; seperate spacially
+  ask innovators [
     ifelse random-layout? [setxy random-xcor random-ycor]
       [ repeat 30 [ layout-spring innovators links 0.5 2 2 ] ]
   ]
 
-  set max-centrality max [centrality] of innovators
-
-  color-innovators
   reset-ticks
 
 end
 
+
+;; GO
+
+to go
+
+  let prev total-innovations
+  ask innovators  [
+    set t-elapsed t-elapsed + 1
+    let other-innovator one-of other innovators
+
+    if (collaborate-prob other-innovator) > random-float 1 [
+      set c-progress c-progress + 1 ;; make progress toward invention
+      set idea combine-ideas idea [idea] of other-innovator
+     ]
+    if-else c-progress = succ-thresh [
+      set n-innovations n-innovations + 1   ;; successful innovation!
+      set total-innovations total-innovations + 1 ;; seperately track
+      reset-innovator                       ;; start again
+      ] [
+
+      if not no-fail [
+        if t-elapsed > T-max [        ;; time ran out, investors lost patience
+          reset-innovator
+          mutate-idea
+          set n-failures n-failures + 1
+        ]
+      ]
+    ]
+  let total-attempts n-innovations + n-failures
+  if-else total-attempts > 0 [
+      set success-rate n-innovations / total-attempts
+      ]
+      [
+      set success-rate 0
+       ]
+  ]
+  set rate total-innovations - prev
+  update-stats
+  ask innovators [color-innovator]
+  select-innovator
+  if delete-clicked? [delete-selected]
+  tick
+end
+
+
+;; Rreset the statistics on all innovators
 to reset-stats
 ask innovators [
     set n-innovations 0
@@ -56,22 +105,11 @@ end
 
 
 
-to-report calculate-average-idea
-  let total-ideas n-values n-idea [0]
-  ask innovators [
-    set total-ideas (map [[?1 ?2] -> sum list ?1 ?2] total-ideas idea)
-  ]
-  report map [ ? -> round (? / count turtles)] total-ideas
-end
-
-
 ;; consider also log transform
-to color-innovators
-  ask innovators [
+to color-innovator
     (ifelse color-by = "innovation count"
       [set color scale-color blue n-innovations 0 max-innovations ]
-      ;;color-by = "success rate"
-      ;;   [set color scale-color blue success-rate 0 max-success-rate]
+
       color-by = "idea"
       [
         if n-idea = 0 [stop]
@@ -83,7 +121,6 @@ to color-innovators
       color-by = "centrality"
       [set color scale-color blue centrality 0 max-centrality]
       [])
-  ]
 end
 
 to reset-innovator
@@ -125,7 +162,6 @@ to-report compare-idea [idea1 idea2]
 end
 
 ;; attempt collaboration
-
 to-report collaborate-prob [other-innovator]
   let d nw:distance-to other-innovator
   let simularity compare-idea idea ([idea] of other-innovator)
@@ -133,13 +169,12 @@ to-report collaborate-prob [other-innovator]
 end
 
 ;; combine idea with collaborator using 'uniform crossover'
-
 to-report combine-ideas [idea1 idea2]
   let new-idea (map [ [a b] -> ifelse-value (random 2 = 0) [a] [b] ] idea1 idea2)
   report new-idea
 end
 
-
+;; random mutation
 to mutate-idea
   let new-idea map [i -> ifelse-value (random-float 1 < mutation-rate) [(1 - i)] [i]] idea
   set idea new-idea
@@ -148,9 +183,9 @@ end
 
 
 
-;; TODO  add more tests
+;; for testing purposes only
 
-to test
+to test-compare
   let idea1 n-values n-idea [0]
   if ( compare-idea idea1 idea1  != 1) [show "compare-idea failed test 1"]
 
@@ -162,54 +197,14 @@ end
 
 to update-stats
   set max-innovations max [n-innovations] of innovators
-  set max-success-rate max [success-rate] of innovators
-  ;; exponential moving average
+
+  ;; exponential smoother.
   set average-innovation-rate average-innovation-rate * (1 - 1 / n-accum)
   set average-innovation-rate average-innovation-rate + rate / n-accum
-  set average-idea calculate-average-idea
 end
 
 
-;; GO
 
-to go
-  let prev total-innovations
-  ask innovators  [
-    let other-innovator one-of other innovators
-
-    if (collaborate-prob other-innovator) > random-float 1 [
-      set c-progress c-progress + 1 ;; make progress toward invention
-      set idea combine-ideas idea [idea] of other-innovator
-     ]
-    if-else c-progress = succ-thresh [
-      set n-innovations n-innovations + 1   ;; successful innovation!
-      set total-innovations total-innovations + 1 ;; seperately track
-      reset-innovator                       ;; start again
-      ] [
-      set t-elapsed t-elapsed + 1   ;; not yet
-      if not no-fail [
-        if t-elapsed > T-max [        ;; time ran out, investors lost patience
-          reset-innovator
-          mutate-idea
-          set n-failures n-failures + 1
-        ]
-      ]
-    ]
-  let total-attempts n-innovations + n-failures
-  if-else total-attempts > 0 [
-      set success-rate n-innovations / total-attempts
-      ]
-      [
-      set success-rate 0
-       ]
-  ]
-  set rate total-innovations - prev
-  update-stats
-  color-innovators
-  select-innovator
-  if delete-clicked? [delete-selected]
-  tick
-end
 
 
 to delete-selected
@@ -240,10 +235,10 @@ to select-innovator
 end
 @#$#@#$#@
 GRAPHICS-WINDOW
-242
-13
-679
-451
+247
+79
+684
+517
 -1
 -1
 13.0
@@ -268,14 +263,14 @@ ticks
 
 SLIDER
 25
-19
+20
 197
-52
+53
 N-Agents
 N-Agents
 0
-500
-150.0
+250
+100.0
 1
 1
 NIL
@@ -316,10 +311,10 @@ NIL
 1
 
 SLIDER
-27
-361
-199
-394
+25
+390
+197
+423
 succ-thresh
 succ-thresh
 1
@@ -331,10 +326,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-1078
-443
-1250
-476
+1077
+465
+1249
+498
 prob
 prob
 0
@@ -346,20 +341,20 @@ NIL
 HORIZONTAL
 
 CHOOSER
-884
-342
-1065
-387
+910
+375
+1091
+420
 network-type
 network-type
 "random" "watts-strogatz" "preferential-attachment"
 1
 
 SLIDER
-687
-442
-859
-475
+700
+443
+872
+476
 neighborhood-size
 neighborhood-size
 0
@@ -371,20 +366,20 @@ NIL
 HORIZONTAL
 
 TEXTBOX
-871
-403
-1109
-431
+700
+390
+938
+418
 Parameters for network generation
-11
-0.0
+13
+34.0
 1
 
 SLIDER
-887
-442
-1060
-475
+888
+463
+1061
+496
 min-degree
 min-degree
 1
@@ -396,30 +391,30 @@ NIL
 HORIZONTAL
 
 TEXTBOX
-1081
-424
-1231
-442
+1080
+425
+1230
+443
 Random
 11
 0.0
 1
 
 TEXTBOX
-694
-427
-844
-445
+705
+425
+855
+443
 Watts Strogatz
 11
 0.0
 1
 
 SLIDER
-688
-482
-860
-515
+701
+483
+873
+516
 rewire-prob
 rewire-prob
 0
@@ -431,9 +426,9 @@ NIL
 HORIZONTAL
 
 TEXTBOX
-897
+895
 425
-1047
+1045
 443
 Preferential Attachment
 11
@@ -452,10 +447,10 @@ random-layout?
 -1000
 
 SLIDER
-31
-408
-203
-441
+25
+320
+197
+353
 p
 p
 0
@@ -482,10 +477,10 @@ NIL
 HORIZONTAL
 
 SLIDER
-28
-327
-200
-360
+26
+356
+198
+389
 T-max
 T-max
 0
@@ -497,10 +492,10 @@ NIL
 HORIZONTAL
 
 PLOT
-704
-45
-904
-195
+705
+80
+905
+230
 InnovationRate
 Mean innovation rate
 ticks
@@ -515,10 +510,10 @@ PENS
 "default" 1.0 0 -16777216 true "" "plot average-innovation-rate"
 
 MONITOR
-706
-271
-804
-316
+710
+296
+808
+341
 avg success rate
 mean [success-rate] of innovators
 6
@@ -526,10 +521,10 @@ mean [success-rate] of innovators
 11
 
 SLIDER
-29
-284
-201
-317
+20
+430
+192
+463
 mutation-rate
 mutation-rate
 0
@@ -541,10 +536,10 @@ NIL
 HORIZONTAL
 
 MONITOR
-705
-213
-836
-258
+709
+243
+840
+288
 Mean innovation rate
 average-innovation-rate
 7
@@ -552,32 +547,21 @@ average-innovation-rate
 11
 
 CHOOSER
-454
-457
-669
-502
+261
+27
+476
+72
 color-by
 color-by
 "innovation count" "idea" "centrality"
 1
 
-MONITOR
-916
-280
-1259
-325
-NIL
-average-idea
-17
-1
-11
-
 BUTTON
-692
-349
-815
-382
-delete innovator
+490
+35
+662
+68
+delete selected innovator
 set delete-clicked? true
 NIL
 1
@@ -590,10 +574,10 @@ NIL
 1
 
 MONITOR
-915
-234
-1259
-279
+919
+259
+1263
+304
 NIL
 [idea] of selected
 17
@@ -601,10 +585,10 @@ NIL
 11
 
 PLOT
-938
-30
-1221
-219
+942
+55
+1225
+244
 Innovations vs Centrality
 Centrality
 Normalized Innovations
@@ -619,10 +603,10 @@ PENS
 "default" 1.0 2 -16777216 true "" "ask innovators [plotxy centrality (n-innovations / max-innovations)]"
 
 SLIDER
-703
-10
-830
-43
+800
+35
+927
+68
 n-accum
 n-accum
 10
@@ -650,10 +634,20 @@ NIL
 NIL
 1
 
+TEXTBOX
+685
+35
+835
+63
+This sets time scale for exponential averaging
+11
+0.0
+1
+
 @#$#@#$#@
 ## WHAT IS IT? (Scope)
 
-This is a model of innovation through collaboration. Innovators try to find others to join forces with. If the they find enough collaborators soon enough, they are successful. Otherwise they fail.   In this system 'fitness' is emergent: innovators are more successful if their ideas are similar to nearby innovators. 
+The phenomenon being modeled here is the effect of collaboration on innovation. The Agents in this model are *Innovators* that try to find others to join forces with. If the they find enough collaborators soon enough, they succesfully 'innovate'.   Otherwise they fail.   In this system 'fitness' is emergent: innovators are more successful if their ideas are similar to nearby innovators, since the probability of collaboration depends on having similar ideas.
 
 The idea is to examine:
 - How communication 'ease' effects overall rate of innovation
@@ -662,59 +656,115 @@ The idea is to examine:
   
 ## HOW IT WORKS
 
-The agents in the model are "innovators" that live on a network environment connected by links. 
+### Agents and properties
 
-Innovators have several properties:
+The `N-agents` agents in the model are *innovators* that live on a (user configurable) network environment connected by links to other innovators. The links have no properties in this model.
 
-- 'ideas' which are represented by a bit vector.
+Innovators have several three key properties:
 
-- 't-elapsed' is how many time steps have elapsed during this innovation attempt.
+- `idea` which is represented by a bit vector of length `n-idea`
+- `t-elapsed` is how many time steps have elapsed during this innovation attempt.
+- `c-progress` which is the count of successful collaborations during this attempt.
 
-- 'c-progress' which is the count of successful collaborations. The innovators need increase 'c-progress' to 'succ-thresh' before 't-elapsed' reaches 't-max'.
-
-
-In addition some properites captures statistics:
-
-- n-innovations n-failures success-rate centrality (flesh out)
-
-
-Each time step:
-
--  Each innovator selects another innovator at random and attempts to collaborate with them. The probability depends on the Hamming distance between the ideas as well as the distance on the network. 
-
-On a success, the innovator creates a new idea that is a combination of its idea and the other innovators ('uniform crossover'). This brings their ideas closer. 
-
-As stated above, we require `succ-thresh` successes to 'innovate'.  If we do not achieve that within 't-max' we call that a failure and we apply a random mutation to the innovator's idea, perhaps bringing it closer to it's neihbors if it is lucky.
+For completeness, the other agent properties for capturing statistics are:
  
-If the innovator does collect enough (`succ-thresh`) collaborators, we increment the number of innovations and the innovator starts again (with the same idea).
+- `n-innovations` : total number of innovations for this agent
+- `n-failures` : total number of failed attempts
+- `centrality` : cached value of the betweennesss centrality of the agent.
+- `success-rate` : cached value of n-innovatoins/(n-innovations + n-failures)  
 
-## HOW TO USE IT
+### Setup:
 
-There are several parameters that the user can adjust.  The most important are:
+During setup:
 
-- 'p'  TODO
+* Global variables are initialized
 
-- 'succ-thres' TODO
- 
-- 'T-max' TODO
+* *Innovators* are created on the selected network type
 
-- 'mutation rate' TODO
+* *Innovators* are initialized and given their inital random idea, as well as computing their centrality on the network
 
-Also important are the choice of network generation algorithm and the parameters for those networks. 
+* *Innovators* are positioned either randomly or in a spring layout
+
+
+
+
+### Each time step (GO):
+
+- For each innovator:
+    - Increment `t-elapsed`
+
+    - Each *innovator* selects another innovator at random and attempts to collaborate with them. The probability depends on the Hamming distance between the ideas mulitplied by` p ^ d` where `p` is user configurable by a slider and `d` is the (shortest) distance on the network.  
+
+     - On a success:
+         - Increment `c-progress` for that innovator
+         - The innovator combines its `idea` with that of the collaborator using uniform crossover (choose abit at random from the two ideas).   This brings their ideas closer, increasing the probability of a successful collaboration between these agents in the future. 
+         - If `c-progress` is equal to `succ-thresh` then we count that as a successful innovation and increment `total-innovations` and the innovator's `n-innovations`. We also reset the  `t-elapsed` and `c-progress` counters to prepare for the next attempt.
+
+    - If this was not a successful innovation we check to see if `t-elapsed` > `T-max` and if so, we reset teh counters, mutate the innovators idea, and increment `n-failures` for that innovator.  The mutation is random where each bit flipped with probability `mutation-rate`. 
+
+- We then wrap up computing statistics and recoloring the innovators.
+
+
+## HOW TO USE IT (Inputs and Outputs)
+
+
+### Model configuration
+
+At the top right are the primary pre-setup configuration variables:
+
+- `N-agents` : The number of innovators in the model
+- `n-idea` : the size of the idea bit vector
+- `random-layout?` : If no, then a spring layout is used. Sometimes I prefered a random layout, and this allows this change (prior to setup). 
+
+In addtion, the network type can be changed as well as the parameters to those network types, in the lower right.  For details see the documentation for the `nw` extension. Three types of networks are included:
 
 - Random,  which is described by a single parameter, the probability of links.
 
 - Watts Strogatz, which is described by two parameters: neighborhood-size which describes the initial number of nodes connected on each side and rewire-prob which describes the probability of rewiring a connectino.
 
-- Preferential Attachment, which has a single parameter, min-degree which is the number of links each new node has when it first joins the network.
+- Preferential Attachment, which has a single parameter, min-degree which is the number of links each new node has when it first joins the network
+
+### Innovation model paramaters
+
+- `p`  probability per hop of a 'potential' collaboration
+
+- `succ-thres` The number of successful collaborations an innovator needs to collect before a successful innovation can be made.
+ 
+- `T-max` The maximum number of steps that are an agent can take to reach `succ-thres`.
+
+-  `mutation-rate` : The probabilty for each bit of a mutation (flip) after a failure to innovate.
+
+### Other controls
+
+- `reset-stats` button resets all statistics. 
+- `color-by` allows you to chose how you want to color the innovators:
+    - `idea`  - the bitvector is mapped to an integer, rescaled and turned into a hue
+    - `centrality` - brighter innovators have a higher centrality
+    - `innovation rate` - brighter innovators have a higher rate of innovation
+- `n-accum` this sets the time constant (in steps) for exponential averaging that is used for the displayed innovation rate. 
 
 
-Remaining controls are primarily for display purposes:
+### Outputs
 
-- 
 
--
+The agents are displayed in the center on a 2-d display, colored by idea, centrality or innovation rate as discussed above.
 
+The innovation rate for the system as a whole is displayed both as a graph and as a monitor output.  This is obtained by computing the difference between the total innovations from one time step to another.  This would be very noise so the displayed values are averaged using an exponential smoother. (see the function `update-stats`) The amout of smoothing is controled by `n-accum`
+
+Below the innovation rate is displayed the average success rate of all the agents. This is average of `n-innovations / (n-innovations + n-failures)` accross all the innovators. 
+
+In the upper right is a scatter plot of the innovation rate (normalized by dividing by the maximum innovation rate) vs centrality.   
+
+Below this is a monitor showing the`idea` of the selected innovator (if any).
+
+### Selecting innovators 
+
+While the model is running you can click on an innovator to select it. When you do this you can see the `idea` of that particular innovator in the display.  
+
+You can also click `delete selected innovator` to remove this innovator (kill it).
+
+
+### Other usage notes
 
 
 I find things are more interesting if you adjust the paraemeters to have about 70% average success rate. Note that the average success rate is computed over the entire run. Use 'reset-stats' to get a fresh computation.
@@ -724,9 +774,9 @@ Note that if you set the idea size to 0, then only the network distance will det
 
 ## THINGS TO TRY
 
-- Start with the default parameters.  Try different coloring schemes. Note that central innovators are able to innovate more rapidly (see scatter plot in upper left).  This is as expected, which helps verify the model. 
+- Start with the default parameters.  Try the different coloring schemes. Note that central innovators are able to innovate more rapidly. This can also be seen in the scatter plot in the upper right.  This is as expected, which helps verify the model. 
 
-- Adjust p and observe the change in innovation rate. This could represent, in the real world, the impact of making it more difficult to communicate with potential collaborators. 
+- Adjust p and observe the change in innovation rate. This could represent, in the real world, the impact of making it more difficult to communicate with potential collaborators.  
 
 - Observe the effect of network structure.  
 
@@ -736,14 +786,14 @@ Note that if you set the idea size to 0, then only the network distance will det
 
 -  Try selecting and deleting important (high centrality) nodes. Do you see an appreciable effect? I only found an appreciable effect with a network generated by preferential attachment. This is probably best explored by running multiple sims using BehaviorSpace.
 
-- There is also a regime where the 'idea' will remain stable for a while and then jump to another stable state. Color by 'idea' to see this effect.  Try setting p so that the observed success probability is close to but not 1.  If you start with the default settings, p ~ 0.65 seems to exhibit this behavior. This is interesting behavior but I don't think it is representative of innovation. 
+- There is also a regime where the 'idea' will remain stable for a while and then jump to another stable state. Color by 'idea' to see this effect.  Try setting p so that the observed success probability is close to but not 1.  If you start with the default settings, p ~ 0.65 seems to exhibit this behavior. This punctuated equilibrium could represent an idea being popular for a while and then a new idea taking over.
 
 
 ## EXTENDING THE MODEL
 
 Some ideas for exentions:
 
-* When agents are killed, replace them with a new agent. Consider how to connect it to the network. One option is to connect them preferentially to the successful agents.
+* When agents are killed, replace them with a new agent. Consider how to connect it to the network. One option is to connect them preferentially to the more successful agents.
 
 * Add new connections between successful collaborators.
 
@@ -751,11 +801,11 @@ Some ideas for exentions:
 
 * Consider other network centrality measures.
  
-* For high 'success-rate' or zero mutation rate the model settles down into a (potentially punctuated) equilibrium where the agents all have the same 'idea' and yet innovation continues.  This doesn't seem realistic - ideas can be improved but new ideas should be better.  ALso some level of mutation should be optimal, not zero.  Some ideas:
+* For high 'success-rate' or zero mutation rate the model settles down into a (potentially punctuated) equilibrium where the agents all have the same 'idea' and yet innovation continues. Furthermore, everyone having the same idea produces the highest innovation, as then the probability of succsessful collaboration highest.  However, we would expect that continuing to improve on the same idea should have diminishing returns. Some ideas on how to address this in future models:  
 
-    * Have an external (e.g. NK) fitness landscape that is used to judge an ideas success. You still need to collaborate, but also ideas need to be 'good' 
+    * Maintain a list of ideas that were successfully innovated and prevent them from being selected again.
 
-    * Previously exploited ideas should have a lower fitness, perhaps the fitness landscape changes dynamically as innovations are successful.  
+    * Have an external (e.g. NK) fitness landscape that is used to judge an ideas success. You still need to collaborate, but also ideas need to be 'good'. In this model we would also want previously exploited ideas to have a lower fitness, perhaps the fitness landscape changes dynamically as innovations are successful.  
 
 
  
@@ -1123,5 +1173,5 @@ true
 Line -7500403 true 150 150 90 180
 Line -7500403 true 150 150 210 180
 @#$#@#$#@
-0
+1
 @#$#@#$#@
