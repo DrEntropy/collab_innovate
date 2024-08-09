@@ -658,15 +658,15 @@ The idea is to examine:
 
 ### Agents and properties
 
-The `N-agents` agents in the model are *innovators* that live on a (user configurable) network environment connected by links to other innovators. The links have no properties in this model.
+The `N-agents` in the model are *innovators* that live on a (user configurable) network environment connected by links to other innovators. The links have no properties in this model.
 
-Innovators have several three key properties:
+Innovators have three key properties:
 
 - `idea` which is represented by a bit vector of length `n-idea`
 - `t-elapsed` is how many time steps have elapsed during this innovation attempt.
 - `c-progress` which is the count of successful collaborations during this attempt.
 
-For completeness, the other agent properties for capturing statistics are:
+For completeness, the other agent properties, which are used for capturing statistics, are listed here:
  
 - `n-innovations` : total number of innovations for this agent
 - `n-failures` : total number of failed attempts
@@ -693,16 +693,16 @@ During setup:
 - For each innovator:
     - Increment `t-elapsed`
 
-    - Each *innovator* selects another innovator at random and attempts to collaborate with them. The probability depends on the Hamming distance between the ideas mulitplied by` p ^ d` where `p` is user configurable by a slider and `d` is the (shortest) distance on the network.  
+    - Each *innovator* selects another innovator at random and attempts to collaborate with them. The probability of collaboration is `(p ^ d) * simularity`, where `d` is the (shortest) distance on the network,  `p` is the user configurable probability per hop, and `simularity` is computed as `1 - hamming-d/n-bits`.   Here `hamming-d` refers to the Hamming distance between the 2 ideas, which is the number of bits you would have to flip to make them the same.
 
      - On a success:
          - Increment `c-progress` for that innovator
          - The innovator combines its `idea` with that of the collaborator using uniform crossover (choose abit at random from the two ideas).   This brings their ideas closer, increasing the probability of a successful collaboration between these agents in the future. 
          - If `c-progress` is equal to `succ-thresh` then we count that as a successful innovation and increment `total-innovations` and the innovator's `n-innovations`. We also reset the  `t-elapsed` and `c-progress` counters to prepare for the next attempt.
 
-    - If this was not a successful innovation we check to see if `t-elapsed` > `T-max` and if so, we reset teh counters, mutate the innovators idea, and increment `n-failures` for that innovator.  The mutation is random where each bit flipped with probability `mutation-rate`. 
+    - If this was not a successful innovation we check to see if `t-elapsed` > `T-max` and if so, we reset the counters, mutate the innovators idea, and increment `n-failures` for that innovator.  The mutation is random where each bit flipped with probability `mutation-rate`. 
 
-- We then wrap up computing statistics and recoloring the innovators.
+- We then wrap up by computing statistics and recoloring the innovators.
 
 
 ## HOW TO USE IT (Inputs and Outputs)
@@ -710,17 +710,17 @@ During setup:
 
 ### Model configuration
 
-At the top right are the primary pre-setup configuration variables:
+At the top left are the primary pre-setup configuration variables:
 
 - `N-agents` : The number of innovators in the model
 - `n-idea` : the size of the idea bit vector
 - `random-layout?` : If no, then a spring layout is used. Sometimes I prefered a random layout, and this allows this change (prior to setup). 
 
-In addtion, the network type can be changed as well as the parameters to those network types, in the lower right.  For details see the documentation for the `nw` extension. Three types of networks are included:
+In addtion, the network type can be changed as well as the parameters for those network types, in the lower right.  For details see the documentation for the `nw` extension. Three types of networks are included:
 
 - Random,  which is described by a single parameter, the probability of links.
 
-- Watts Strogatz, which is described by two parameters: neighborhood-size which describes the initial number of nodes connected on each side and rewire-prob which describes the probability of rewiring a connectino.
+- Watts Strogatz, which is described by two parameters: neighborhood-size which describes the initial number of nodes connected on each side and rewire-prob which describes the probability of rewiring a connection.
 
 - Preferential Attachment, which has a single parameter, min-degree which is the number of links each new node has when it first joins the network
 
@@ -749,7 +749,7 @@ In addtion, the network type can be changed as well as the parameters to those n
 
 The agents are displayed in the center on a 2-d display, colored by idea, centrality or innovation rate as discussed above.
 
-The innovation rate for the system as a whole is displayed both as a graph and as a monitor output.  This is obtained by computing the difference between the total innovations from one time step to another.  This would be very noise so the displayed values are averaged using an exponential smoother. (see the function `update-stats`) The amout of smoothing is controled by `n-accum`
+The innovation rate for the system as a whole is displayed both as a graph and as a monitor output.  This is obtained by computing the difference between the total innovations from one time step to another.  This would be very noisy so the displayed values are averaged using an exponential smoother. (see the function `update-stats`) The amout of smoothing is controled by `n-accum`
 
 Below the innovation rate is displayed the average success rate of all the agents. This is average of `n-innovations / (n-innovations + n-failures)` accross all the innovators. 
 
