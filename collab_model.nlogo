@@ -609,7 +609,7 @@ SLIDER
 68
 n-accum
 n-accum
-10
+1
 500
 50.0
 10
@@ -635,10 +635,10 @@ NIL
 1
 
 TEXTBOX
-685
-35
-835
-63
+695
+25
+800
+70
 This sets time scale for exponential averaging
 11
 0.0
